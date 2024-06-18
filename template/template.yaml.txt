@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: A simple AWS Lambda function with API Gateway using SAM
+
+Resources:
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs14.x
+      CodeUri: .
+      Description: A simple Lambda function
+      MemorySize: 128
+      Timeout: 3
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          PARAM1: VALUE1
+
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: MyApi
+      StageName: prod
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: "My API"
+          version: "1.0"
+        paths:
+          /:
+            get:
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
+
+Outputs:
+  MyApiEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+  MyLambdaFunctionArn:
+    Description: "ARN for MyLambdaFunction"
+    Value: !GetAtt MyLambdaFunction.Arn
